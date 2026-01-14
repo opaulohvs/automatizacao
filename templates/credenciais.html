@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credenciais - Automação BM</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --matrix-green: #00ff41;
+            --matrix-green-dark: #00cc33;
+            --matrix-green-light: #33ff66;
+            --matrix-bg: #000000;
+            --matrix-bg-dark: #0a0a0a;
+            --matrix-text: #00ff41;
+            --matrix-text-dim: #00cc33;
+            --matrix-glow: rgba(0, 255, 65, 0.5);
+            --matrix-glow-strong: rgba(0, 255, 65, 0.8);
+            --matrix-border: #003311;
+        }
+        
+        body {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            background: var(--matrix-bg);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--matrix-text);
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 255, 65, 0.03) 2px,
+                    rgba(0, 255, 65, 0.03) 4px
+                );
+            pointer-events: none;
+            z-index: 0;
+            animation: scan 8s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(0, 20px, 0); }
+        }
+        
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .matrix-char {
+            position: absolute;
+            color: var(--matrix-text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            opacity: 0;
+            animation: fall linear infinite;
+            text-shadow: 0 0 5px var(--matrix-green);
+            font-weight: 500;
+            will-change: transform, opacity;
+            transform: translateZ(0);
+        }
+        
+        @keyframes fall {
+            0% {
+                transform: translate3d(0, -200px, 0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate3d(0, calc(100vh + 200px), 0);
+                opacity: 0;
+            }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--matrix-bg-dark);
+            border-radius: 0;
+            border: 2px solid var(--matrix-green);
+            box-shadow: 
+                0 0 20px var(--matrix-glow),
+                0 0 40px var(--matrix-glow),
+                inset 0 0 20px rgba(0, 255, 65, 0.1);
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .header {
+            background: var(--matrix-bg);
+            color: var(--matrix-text);
+            padding: 30px 40px;
+            border-bottom: 2px solid var(--matrix-green);
+            box-shadow: 0 0 30px var(--matrix-glow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            font-family: 'Orbitron', 'JetBrains Mono', monospace;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px var(--matrix-green);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .nav-link {
+            color: var(--matrix-text);
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 1px solid var(--matrix-border);
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .nav-link:hover {
+            border-color: var(--matrix-green);
+            box-shadow: 0 0 10px var(--matrix-glow);
+            transform: translateY(-2px);
+            will-change: transform;
+        }
+        
+        .nav-link.active {
+            border-color: var(--matrix-green);
+            box-shadow: 0 0 10px var(--matrix-glow);
+        }
+        
+        .content {
+            padding: 40px;
+            background: var(--matrix-bg-dark);
+            position: relative;
+        }
+        
+        .card {
+            background: var(--matrix-bg);
+            border: 1px solid var(--matrix-green);
+            border-radius: 0;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 
+                0 0 10px var(--matrix-glow),
+                inset 0 0 10px rgba(0, 255, 65, 0.1);
+            position: relative;
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--matrix-text);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--matrix-green);
+            font-family: 'Orbitron', 'JetBrains Mono', monospace;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            color: var(--matrix-text-dim);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        
+        .form-input {
+            width: 100%;
+            background: var(--matrix-bg-dark);
+            border: 1px solid var(--matrix-border);
+            color: var(--matrix-text);
+            padding: 12px 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--matrix-green);
+            box-shadow: 0 0 10px var(--matrix-glow);
+        }
+        
+        .form-input::placeholder {
+            color: var(--matrix-text-dim);
+            opacity: 0.5;
+        }
+        
+        .btn {
+            background: var(--matrix-bg);
+            color: var(--matrix-text);
+            border: 2px solid var(--matrix-green);
+            padding: 12px 28px;
+            border-radius: 0;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 
+                0 0 10px var(--matrix-glow),
+                inset 0 0 10px rgba(0, 255, 65, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'JetBrains Mono', monospace;
+            text-shadow: 0 0 5px var(--matrix-green);
+        }
+        
+        .btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 
+                0 0 15px var(--matrix-glow-strong),
+                inset 0 0 15px rgba(0, 255, 65, 0.15);
+            border-color: var(--matrix-green-light);
+            color: var(--matrix-green-light);
+            will-change: transform, box-shadow;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: var(--matrix-bg-dark);
+            border-color: var(--matrix-border);
+        }
+        
+        .status-message {
+            padding: 12px 16px;
+            margin-top: 15px;
+            border: 1px solid;
+            font-size: 0.85rem;
+            display: none;
+        }
+        
+        .status-message.show {
+            display: block;
+        }
+        
+        .status-message.success {
+            background: rgba(0, 255, 65, 0.1);
+            border-color: var(--matrix-green);
+            color: var(--matrix-green);
+        }
+        
+        .status-message.error {
+            background: rgba(255, 0, 64, 0.1);
+            border-color: #ff0040;
+            color: #ff0040;
+        }
+        
+        .info-box {
+            background: rgba(0, 255, 65, 0.05);
+            border: 1px solid var(--matrix-border);
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: var(--matrix-text-dim);
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>> CREDENCIAIS.exe</h1>
+            <div class="nav-links">
+                <a href="/" class="nav-link">PROCESSAR</a>
+                <a href="/dashboard" class="nav-link">DASHBOARD</a>
+                <a href="/credenciais" class="nav-link active">CREDENCIAIS</a>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <strong>> INFORMAÇÃO:</strong> Atualize as credenciais do DBFusion e SpyHub quando necessário. 
+                As alterações serão salvas e aplicadas nos próximos processamentos.
+            </div>
+            
+            <!-- DBFusion Credentials -->
+            <div class="card">
+                <h2 class="card-title">> CREDENCIAIS_DBFUSION</h2>
+                <form id="formDBFusion">
+                    <div class="form-group">
+                        <label class="form-label">URL</label>
+                        <input type="text" class="form-input" id="dbfusionUrl" 
+                               placeholder="https://dbfusion.me/loja" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">USUÁRIO</label>
+                        <input type="text" class="form-input" id="dbfusionUser" 
+                               placeholder="Seu usuário" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">SENHA</label>
+                        <input type="password" class="form-input" id="dbfusionPassword" 
+                               placeholder="Sua senha" required>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn">SALVAR_DBFUSION</button>
+                        <button type="button" class="btn btn-secondary" onclick="testarDBFusion()">TESTAR</button>
+                    </div>
+                    <div class="status-message" id="statusDBFusion"></div>
+                </form>
+            </div>
+            
+            <!-- SpyHub Credentials -->
+            <div class="card">
+                <h2 class="card-title">> CREDENCIAIS_SPYHUB</h2>
+                <form id="formSpyHub">
+                    <div class="form-group">
+                        <label class="form-label">URL</label>
+                        <input type="text" class="form-input" id="spyhubUrl" 
+                               placeholder="https://app.spyhub.io" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">USUÁRIO</label>
+                        <input type="text" class="form-input" id="spyhubUser" 
+                               placeholder="Seu usuário" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">SENHA</label>
+                        <input type="password" class="form-input" id="spyhubPassword" 
+                               placeholder="Sua senha" required>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn">SALVAR_SPYHUB</button>
+                        <button type="button" class="btn btn-secondary" onclick="testarSpyHub()">TESTAR</button>
+                    </div>
+                    <div class="status-message" id="statusSpyHub"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Matrix Rain Effect -->
+    <div class="matrix-rain" id="matrixRain"></div>
+    
+    <script>
+        // Matrix Rain Effect
+        function createMatrixRain() {
+            const matrixRain = document.getElementById('matrixRain');
+            const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const columnWidth = 25;
+            const columns = Math.floor(window.innerWidth / columnWidth);
+            const maxChars = Math.min(columns * 2, 150);
+            
+            for (let i = 0; i < maxChars; i++) {
+                const char = document.createElement('div');
+                char.className = 'matrix-char';
+                char.textContent = chars[Math.floor(Math.random() * chars.length)];
+                char.style.left = (Math.random() * window.innerWidth) + 'px';
+                char.style.animationDuration = (Math.random() * 3 + 4) + 's';
+                char.style.animationDelay = (Math.random() * 2) + 's';
+                char.style.opacity = Math.random() * 0.6 + 0.3;
+                char.style.fontSize = (Math.random() * 3 + 14) + 'px';
+                matrixRain.appendChild(char);
+            }
+        }
+        
+        createMatrixRain();
+        
+        // Carregar credenciais ao iniciar
+        async function carregarCredenciais() {
+            try {
+                const response = await fetch('/api/credenciais');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const creds = data.credentials;
+                    
+                    // Preenche DBFusion
+                    if (creds.dbfusion) {
+                        document.getElementById('dbfusionUrl').value = creds.dbfusion.url || '';
+                        document.getElementById('dbfusionUser').value = creds.dbfusion.user || '';
+                        document.getElementById('dbfusionPassword').value = creds.dbfusion.password || '';
+                    }
+                    
+                    // Preenche SpyHub
+                    if (creds.spyhub) {
+                        document.getElementById('spyhubUrl').value = creds.spyhub.url || '';
+                        document.getElementById('spyhubUser').value = creds.spyhub.user || '';
+                        document.getElementById('spyhubPassword').value = creds.spyhub.password || '';
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao carregar credenciais:', error);
+            }
+        }
+        
+        // Salvar DBFusion
+        document.getElementById('formDBFusion').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusDiv = document.getElementById('statusDBFusion');
+            
+            const data = {
+                url: document.getElementById('dbfusionUrl').value,
+                user: document.getElementById('dbfusionUser').value,
+                password: document.getElementById('dbfusionPassword').value
+            };
+            
+            try {
+                const response = await fetch('/api/credenciais/dbfusion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusDiv.textContent = '[SUCESSO] Credenciais do DBFusion salvas!';
+                    statusDiv.className = 'status-message success show';
+                } else {
+                    statusDiv.textContent = '[ERRO] ' + (result.error || 'Erro ao salvar credenciais');
+                    statusDiv.className = 'status-message error show';
+                }
+            } catch (error) {
+                statusDiv.textContent = '[ERRO] Falha ao salvar: ' + error.message;
+                statusDiv.className = 'status-message error show';
+            }
+            
+            setTimeout(() => {
+                statusDiv.classList.remove('show');
+            }, 5000);
+        });
+        
+        // Salvar SpyHub
+        document.getElementById('formSpyHub').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusDiv = document.getElementById('statusSpyHub');
+            
+            const data = {
+                url: document.getElementById('spyhubUrl').value,
+                user: document.getElementById('spyhubUser').value,
+                password: document.getElementById('spyhubPassword').value
+            };
+            
+            try {
+                const response = await fetch('/api/credenciais/spyhub', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusDiv.textContent = '[SUCESSO] Credenciais do SpyHub salvas!';
+                    statusDiv.className = 'status-message success show';
+                } else {
+                    statusDiv.textContent = '[ERRO] ' + (result.error || 'Erro ao salvar credenciais');
+                    statusDiv.className = 'status-message error show';
+                }
+            } catch (error) {
+                statusDiv.textContent = '[ERRO] Falha ao salvar: ' + error.message;
+                statusDiv.className = 'status-message error show';
+            }
+            
+            setTimeout(() => {
+                statusDiv.classList.remove('show');
+            }, 5000);
+        });
+        
+        // Testar DBFusion
+        async function testarDBFusion() {
+            const statusDiv = document.getElementById('statusDBFusion');
+            statusDiv.textContent = '[INFO] Testando credenciais...';
+            statusDiv.className = 'status-message success show';
+            
+            try {
+                const response = await fetch('/api/credenciais/dbfusion/test', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusDiv.textContent = '[SUCESSO] ' + (result.message || 'Credenciais válidas!');
+                    statusDiv.className = 'status-message success show';
+                } else {
+                    statusDiv.textContent = '[ERRO] ' + (result.error || 'Credenciais inválidas');
+                    statusDiv.className = 'status-message error show';
+                }
+            } catch (error) {
+                statusDiv.textContent = '[ERRO] Falha ao testar: ' + error.message;
+                statusDiv.className = 'status-message error show';
+            }
+        }
+        
+        // Testar SpyHub
+        async function testarSpyHub() {
+            const statusDiv = document.getElementById('statusSpyHub');
+            statusDiv.textContent = '[INFO] Testando credenciais...';
+            statusDiv.className = 'status-message success show';
+            
+            try {
+                const response = await fetch('/api/credenciais/spyhub/test', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusDiv.textContent = '[SUCESSO] ' + (result.message || 'Credenciais válidas!');
+                    statusDiv.className = 'status-message success show';
+                } else {
+                    statusDiv.textContent = '[ERRO] ' + (result.error || 'Credenciais inválidas');
+                    statusDiv.className = 'status-message error show';
+                }
+            } catch (error) {
+                statusDiv.textContent = '[ERRO] Falha ao testar: ' + error.message;
+                statusDiv.className = 'status-message error show';
+            }
+        }
+        
+        // Carregar ao iniciar
+        carregarCredenciais();
+    </script>
+</body>
+</html>
+
