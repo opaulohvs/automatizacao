@@ -1,24 +1,44 @@
 FROM python:3.13-slim
 
-# Instalar dependências do sistema e Chrome
+# Instalar dependências do sistema
 RUN apt-get update && \
     apt-get install -y \
-    chromium \
-    chromium-driver \
-    chromium-sandbox \
     wget \
     curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    gnupg \
+    unzip \
+    ca-certificates \
+    && apt-get clean
 
-# Verificar instalação do Chrome
-RUN which chromium && chromium --version || echo "Chromium não encontrado"
-RUN which chromedriver && chromedriver --version || echo "ChromeDriver não encontrado"
-RUN ls -la /usr/bin/chrom* || echo "Nenhum executável chromium encontrado"
+# Instalar Google Chrome (mais confiável que Chromium)
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar ChromeDriver compatível
+RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+' | head -1 | cut -d. -f1) && \
+    echo "Chrome version detected: $CHROME_VERSION" && \
+    CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_${CHROME_VERSION}" || echo "131.0.6778.85") && \
+    echo "Installing ChromeDriver version: $CHROMEDRIVER_VERSION" && \
+    wget -q "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver.zip && \
+    unzip -q /tmp/chromedriver.zip -d /tmp/ && \
+    mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
+    chmod +x /usr/local/bin/chromedriver && \
+    rm -rf /tmp/chromedriver* && \
+    chromedriver --version
+
+# Verificar instalação
+RUN echo "=== Verificando instalação ===" && \
+    google-chrome --version && \
+    chromedriver --version && \
+    ls -la /usr/bin/google-chrome* /usr/local/bin/chromedriver
 
 # Definir variáveis de ambiente para Chrome
-ENV CHROME_BIN=/usr/bin/chromium
-ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
+ENV CHROME_BIN=/usr/bin/google-chrome-stable
+ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 
 # Criar diretório de trabalho
 WORKDIR /app

@@ -63,20 +63,32 @@ class DBFusionClient:
             
             # Define caminho do Chrome se estiver em Railway/Linux
             chrome_binary = None
-            if os.path.exists('/usr/bin/chromium'):
-                chrome_binary = '/usr/bin/chromium'
-                chrome_options.binary_location = chrome_binary
-                print(f"[DEBUG DBFusion] Usando Chrome em: {chrome_binary}")
-            elif os.path.exists('/usr/bin/chromium-browser'):
-                chrome_binary = '/usr/bin/chromium-browser'
-                chrome_options.binary_location = chrome_binary
-                print(f"[DEBUG DBFusion] Usando Chrome em: {chrome_binary}")
-            elif os.path.exists('/usr/bin/google-chrome'):
-                chrome_binary = '/usr/bin/google-chrome'
-                chrome_options.binary_location = chrome_binary
-                print(f"[DEBUG DBFusion] Usando Chrome em: {chrome_binary}")
-            else:
-                print("[DEBUG DBFusion] Chrome não encontrado nos caminhos padrão, tentando usar do PATH")
+            chrome_paths = [
+                '/usr/bin/google-chrome',
+                '/usr/bin/google-chrome-stable',
+                '/usr/bin/chromium',
+                '/usr/bin/chromium-browser',
+            ]
+            
+            for chrome_path in chrome_paths:
+                if os.path.exists(chrome_path):
+                    chrome_binary = chrome_path
+                    chrome_options.binary_location = chrome_binary
+                    print(f"[DEBUG DBFusion] ✓ Chrome encontrado em: {chrome_binary}")
+                    break
+            
+            if not chrome_binary:
+                print("[DEBUG DBFusion] ⚠ Chrome não encontrado nos caminhos padrão, tentando usar do PATH")
+                # Tenta encontrar via which
+                import subprocess
+                try:
+                    result = subprocess.run(['which', 'google-chrome'], capture_output=True, text=True)
+                    if result.returncode == 0:
+                        chrome_binary = result.stdout.strip()
+                        chrome_options.binary_location = chrome_binary
+                        print(f"[DEBUG DBFusion] ✓ Chrome encontrado via PATH: {chrome_binary}")
+                except:
+                    pass
             
             # Tenta diferentes métodos para obter o ChromeDriver
             driver_path = None
@@ -84,22 +96,30 @@ class DBFusionClient:
             # Método 1: Em Linux/Railway, tenta usar ChromeDriver do sistema primeiro
             if is_linux:
                 chromedriver_paths = [
+                    '/usr/local/bin/chromedriver',  # Instalado pelo Dockerfile
                     '/usr/bin/chromedriver',
-                    '/usr/local/bin/chromedriver',
                     '/usr/lib/chromium-browser/chromedriver',
                 ]
                 
                 for chromedriver_path in chromedriver_paths:
                     if os.path.exists(chromedriver_path):
                         try:
-                            print(f"[DEBUG] Tentando usar ChromeDriver em: {chromedriver_path}")
+                            print(f"[DEBUG DBFusion] Tentando usar ChromeDriver em: {chromedriver_path}")
+                            # Verifica permissões
+                            import stat
+                            if not os.access(chromedriver_path, os.X_OK):
+                                print(f"[DEBUG DBFusion] Adicionando permissão de execução...")
+                                os.chmod(chromedriver_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+                            
                             service = Service(chromedriver_path)
                             self.driver = webdriver.Chrome(service=service, options=chrome_options)
                             self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-                            print("[DEBUG] ChromeDriver inicializado com sucesso!")
+                            print(f"[DEBUG DBFusion] ✓ ChromeDriver inicializado com sucesso em: {chromedriver_path}")
                             return self.driver
                         except Exception as e:
-                            print(f"[DEBUG] Erro ao usar {chromedriver_path}: {e}")
+                            print(f"[DEBUG DBFusion] ✗ Erro ao usar {chromedriver_path}: {e}")
+                            import traceback
+                            traceback.print_exc()
                             continue
             
             # Método 2: Tenta usar webdriver-manager

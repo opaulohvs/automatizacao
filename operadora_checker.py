@@ -49,21 +49,38 @@ class OperadoraChecker:
             chrome_options.add_experimental_option('useAutomationExtension', False)
             
             # Define caminho do Chrome se estiver em Railway/Linux
-            if os.path.exists('/usr/bin/chromium'):
-                chrome_options.binary_location = '/usr/bin/chromium'
-                print(f"[DEBUG Operadora] Usando Chrome em: /usr/bin/chromium")
-            elif os.path.exists('/usr/bin/chromium-browser'):
-                chrome_options.binary_location = '/usr/bin/chromium-browser'
-                print(f"[DEBUG Operadora] Usando Chrome em: /usr/bin/chromium-browser")
-            elif os.path.exists('/usr/bin/google-chrome'):
-                chrome_options.binary_location = '/usr/bin/google-chrome'
-                print(f"[DEBUG Operadora] Usando Chrome em: /usr/bin/google-chrome")
+            chrome_paths = [
+                '/usr/bin/google-chrome-stable',
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium',
+                '/usr/bin/chromium-browser',
+            ]
+            
+            chrome_binary = None
+            for chrome_path in chrome_paths:
+                if os.path.exists(chrome_path):
+                    chrome_binary = chrome_path
+                    chrome_options.binary_location = chrome_binary
+                    print(f"[DEBUG Operadora] ✓ Chrome encontrado em: {chrome_binary}")
+                    break
+            
+            if not chrome_binary:
+                print("[DEBUG Operadora] ⚠ Chrome não encontrado nos caminhos padrão, tentando usar do PATH")
+                import subprocess
+                try:
+                    result = subprocess.run(['which', 'google-chrome'], capture_output=True, text=True)
+                    if result.returncode == 0:
+                        chrome_binary = result.stdout.strip()
+                        chrome_options.binary_location = chrome_binary
+                        print(f"[DEBUG Operadora] ✓ Chrome encontrado via PATH: {chrome_binary}")
+                except:
+                    pass
             
             # Em Linux/Railway, tenta usar ChromeDriver do sistema primeiro
             if is_linux:
                 chromedriver_paths = [
+                    '/usr/local/bin/chromedriver',  # Instalado pelo Dockerfile
                     '/usr/bin/chromedriver',
-                    '/usr/local/bin/chromedriver',
                     '/usr/lib/chromium-browser/chromedriver',
                 ]
                 
@@ -71,13 +88,21 @@ class OperadoraChecker:
                     if os.path.exists(chromedriver_path):
                         try:
                             print(f"[DEBUG Operadora] Tentando usar ChromeDriver em: {chromedriver_path}")
+                            # Verifica permissões
+                            import stat
+                            if not os.access(chromedriver_path, os.X_OK):
+                                print(f"[DEBUG Operadora] Adicionando permissão de execução...")
+                                os.chmod(chromedriver_path, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+                            
                             service = Service(chromedriver_path)
                             self.driver = webdriver.Chrome(service=service, options=chrome_options)
                             self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-                            print("[DEBUG Operadora] ChromeDriver inicializado com sucesso!")
+                            print(f"[DEBUG Operadora] ✓ ChromeDriver inicializado com sucesso em: {chromedriver_path}")
                             return self.driver
                         except Exception as e:
-                            print(f"[DEBUG Operadora] Erro ao usar {chromedriver_path}: {e}")
+                            print(f"[DEBUG Operadora] ✗ Erro ao usar {chromedriver_path}: {e}")
+                            import traceback
+                            traceback.print_exc()
                             continue
             
             # Tenta diferentes métodos para obter o ChromeDriver
