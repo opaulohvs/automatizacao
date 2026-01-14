@@ -38,16 +38,35 @@ class DBFusionClient:
         """Inicializa driver Selenium"""
         if self.driver is None:
             chrome_options = Options()
-            # Modo headless para produção (servidores sem interface gráfica)
             import os
-            if os.getenv('ENVIRONMENT') == 'production' or os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('RENDER'):
-                chrome_options.add_argument('--headless')
-                chrome_options.add_argument('--disable-gpu')
+            
+            # Sempre usar headless em servidores (Railway, Render, etc)
+            # Detecta se está rodando em ambiente de produção
+            is_production = (
+                os.getenv('ENVIRONMENT') == 'production' or 
+                os.getenv('RAILWAY_ENVIRONMENT') or 
+                os.getenv('RENDER') or
+                os.getenv('PORT') or  # Railway/Render sempre define PORT
+                not os.path.exists('/.dockerenv') == False  # Se não estiver em Docker local
+            )
+            
+            # Força headless em produção
+            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--no-sandbox')
             chrome_options.add_argument('--disable-dev-shm-usage')
             chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+            chrome_options.add_argument('--disable-software-rasterizer')
+            chrome_options.add_argument('--disable-extensions')
+            chrome_options.add_argument('--single-process')  # Importante para Railway
             chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
+            
+            # Define caminho do Chrome se estiver em Railway/Linux
+            if os.path.exists('/usr/bin/chromium'):
+                chrome_options.binary_location = '/usr/bin/chromium'
+            elif os.path.exists('/usr/bin/chromium-browser'):
+                chrome_options.binary_location = '/usr/bin/chromium-browser'
             
             # Tenta diferentes métodos para obter o ChromeDriver
             driver_path = None
@@ -89,14 +108,27 @@ class DBFusionClient:
             except Exception as e:
                 print(f"Aviso: Erro ao usar ChromeDriver do PATH: {e}")
             
-            # Método 3: Tenta localizar ChromeDriver manualmente
+            # Método 3: Tenta localizar ChromeDriver manualmente (Windows e Linux)
             import os
-            possible_paths = [
-                os.path.join(os.getcwd(), 'chromedriver.exe'),
-                os.path.join(os.path.expanduser('~'), '.wdm', 'drivers', 'chromedriver', 'win64', '*', 'chromedriver.exe'),
-                'C:\\chromedriver\\chromedriver.exe',
-                'C:\\Program Files\\chromedriver\\chromedriver.exe',
-            ]
+            import platform
+            possible_paths = []
+            
+            if platform.system() == 'Windows':
+                possible_paths = [
+                    os.path.join(os.getcwd(), 'chromedriver.exe'),
+                    os.path.join(os.path.expanduser('~'), '.wdm', 'drivers', 'chromedriver', 'win64', '*', 'chromedriver.exe'),
+                    'C:\\chromedriver\\chromedriver.exe',
+                    'C:\\Program Files\\chromedriver\\chromedriver.exe',
+                ]
+            else:
+                # Linux (Railway, Render, etc)
+                possible_paths = [
+                    '/usr/bin/chromedriver',
+                    '/usr/local/bin/chromedriver',
+                    '/usr/lib/chromium-browser/chromedriver',
+                    os.path.join(os.getcwd(), 'chromedriver'),
+                    os.path.join(os.path.expanduser('~'), '.wdm', 'drivers', 'chromedriver', '*', '*', 'chromedriver'),
+                ]
             
             for path in possible_paths:
                 try:

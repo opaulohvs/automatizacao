@@ -26,16 +26,25 @@ class OperadoraChecker:
         """Inicializa driver Selenium (reutiliza se já existir)"""
         if self.driver is None:
             chrome_options = Options()
-            # Modo headless para produção (servidores sem interface gráfica)
             import os
-            if os.getenv('ENVIRONMENT') == 'production' or os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('RENDER'):
-                chrome_options.add_argument('--headless')
-                chrome_options.add_argument('--disable-gpu')
+            
+            # Sempre usar headless em servidores (Railway, Render, etc)
+            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--no-sandbox')
             chrome_options.add_argument('--disable-dev-shm-usage')
             chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+            chrome_options.add_argument('--disable-software-rasterizer')
+            chrome_options.add_argument('--disable-extensions')
+            chrome_options.add_argument('--single-process')  # Importante para Railway
             chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
+            
+            # Define caminho do Chrome se estiver em Railway/Linux
+            if os.path.exists('/usr/bin/chromium'):
+                chrome_options.binary_location = '/usr/bin/chromium'
+            elif os.path.exists('/usr/bin/chromium-browser'):
+                chrome_options.binary_location = '/usr/bin/chromium-browser'
             
             # Tenta diferentes métodos para obter o ChromeDriver
             driver_path = None
