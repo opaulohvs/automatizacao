@@ -5,6 +5,6 @@ pandas>=2.2.0
 flask==3.0.0
 python-dotenv==1.0.0
 webdriver-manager==4.0.1
-lxml==4.9.3
+lxml>=5.0.0
 gunicorn==21.2.0
 
