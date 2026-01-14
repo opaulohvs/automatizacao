@@ -37,14 +37,37 @@ git branch -M main
 git push -u origin main
 ```
 
-## Se der erro de autenticação
+## Se der erro de autenticação (403 Permission denied)
 
-Se pedir usuário/senha, você pode:
+**Problema:** Você está logado com outra conta (`Joao-Vitor-Guerreiro`) mas precisa fazer push no repositório `opaulohvs`.
+
+### Solução: Remover credenciais antigas
+
+**No Windows (PowerShell como Administrador):**
+```powershell
+# Remover credenciais do GitHub
+cmdkey /delete:git:https://github.com
+```
+
+**Ou via Interface Gráfica:**
+1. Pressione `Win + R`
+2. Digite: `control /name Microsoft.CredentialManager`
+3. Vá em "Credenciais do Windows"
+4. Procure por `git:https://github.com`
+5. Clique e depois em "Remover"
+
+### Depois, fazer login novamente:
 
 **Opção 1: Usar Personal Access Token (Recomendado)**
-1. Vá em GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Gere um novo token com permissão `repo`
-3. Use o token como senha quando pedir
+1. Vá em: https://github.com/settings/tokens
+2. Clique em "Generate new token" → "Generate new token (classic)"
+3. Dê um nome (ex: "automatizacao-repo")
+4. Selecione escopo: `repo` (marca todas as opções)
+5. Clique em "Generate token"
+6. **COPIE O TOKEN** (você só verá uma vez!)
+7. Ao fazer push:
+   - Username: `opaulohvs`
+   - Password: **Cole o token** (não sua senha!)
 
 **Opção 2: Usar GitHub CLI**
 ```bash
