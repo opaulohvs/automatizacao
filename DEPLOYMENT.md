@@ -97,15 +97,18 @@ chrome_options.add_argument('--disable-gpu')
 
 ### 4. Variáveis de Ambiente
 
-Configure no painel do serviço:
-- `DBFUSION_URL`
-- `DBFUSION_USER`
-- `DBFUSION_PASSWORD`
-- `SPYHUB_URL`
-- `SPYHUB_USER`
-- `SPYHUB_PASSWORD`
-- `TARGET_BIN`
-- `TARGET_OPERADORAS`
+Configure no painel do serviço (Railway/Render/etc):
+- `DBFUSION_URL` (opcional, padrão: https://dbfusion.me/loja)
+- `DBFUSION_USER` (obrigatório)
+- `DBFUSION_PASSWORD` (obrigatório)
+- `SPYHUB_URL` (opcional, padrão: https://app.spyhub.io)
+- `SPYHUB_USER` (obrigatório)
+- `SPYHUB_PASSWORD` (obrigatório)
+- `TARGET_BIN` (opcional, padrão: 406669)
+- `TARGET_OPERADORAS` (opcional, padrão: TIM,ALGAR)
+- `CONSULTA_OPERADORA_URL` (opcional, padrão: http://consultaoperadora.com.br/site2015/)
+
+**Importante:** O arquivo `config.py` agora lê de variáveis de ambiente automaticamente. Configure as variáveis acima no painel do seu serviço de deploy.
 
 ## 📋 Checklist de Deploy
 

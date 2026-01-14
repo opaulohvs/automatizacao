@@ -38,8 +38,8 @@ env/
 # Arquivos de configuração sensíveis
 .env
 config_local.py
-config.py
 credentials.json
+# config.py agora está no repositório (usa variáveis de ambiente em produção)
 
 # Banco de dados
 *.db

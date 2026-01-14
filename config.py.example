@@ -1,0 +1,25 @@
+"""
+Template de configuração - Copie para config.py e preencha com suas credenciais
+OU use variáveis de ambiente
+"""
+import os
+
+# Credenciais DBFusion
+DBFUSION_URL = os.getenv("DBFUSION_URL", "https://dbfusion.me/loja")
+DBFUSION_USER = os.getenv("DBFUSION_USER", "seu_usuario")
+DBFUSION_PASSWORD = os.getenv("DBFUSION_PASSWORD", "sua_senha")
+
+# Credenciais SpyHub
+SPYHUB_URL = os.getenv("SPYHUB_URL", "https://app.spyhub.io")
+SPYHUB_USER = os.getenv("SPYHUB_USER", "seu_usuario")
+SPYHUB_PASSWORD = os.getenv("SPYHUB_PASSWORD", "sua_senha")
+
+# Filtro BIN
+TARGET_BIN = os.getenv("TARGET_BIN", "406669")
+
+# URL de consulta de operadora
+CONSULTA_OPERADORA_URL = os.getenv("CONSULTA_OPERADORA_URL", "http://consultaoperadora.com.br/site2015/")
+
+# Operadoras alvo
+TARGET_OPERADORAS = os.getenv("TARGET_OPERADORAS", "TIM,ALGAR").split(",")
+
