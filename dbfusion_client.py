@@ -40,17 +40,14 @@ class DBFusionClient:
             chrome_options = Options()
             import os
             
-            # Sempre usar headless em servidores (Railway, Render, etc)
-            # Detecta se está rodando em ambiente de produção
-            is_production = (
-                os.getenv('ENVIRONMENT') == 'production' or 
-                os.getenv('RAILWAY_ENVIRONMENT') or 
-                os.getenv('RENDER') or
-                os.getenv('PORT') or  # Railway/Render sempre define PORT
-                not os.path.exists('/.dockerenv') == False  # Se não estiver em Docker local
-            )
+            # Detecta ambiente Railway/Linux
+            is_railway = bool(os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('RAILWAY_SERVICE_NAME'))
+            is_linux = os.path.exists('/usr/bin/chromium') or os.path.exists('/usr/bin/chromium-browser')
             
-            # Força headless em produção
+            print(f"[DEBUG DBFusion] Ambiente detectado - Railway: {is_railway}, Linux: {is_linux}")
+            print(f"[DEBUG DBFusion] PORT: {os.getenv('PORT')}, RAILWAY_ENVIRONMENT: {os.getenv('RAILWAY_ENVIRONMENT')}")
+            
+            # Sempre usar headless em servidores (Railway, Render, etc)
             chrome_options.add_argument('--headless')
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--no-sandbox')
@@ -59,32 +56,57 @@ class DBFusionClient:
             chrome_options.add_argument('--disable-software-rasterizer')
             chrome_options.add_argument('--disable-extensions')
             chrome_options.add_argument('--single-process')  # Importante para Railway
+            chrome_options.add_argument('--disable-setuid-sandbox')
+            chrome_options.add_argument('--remote-debugging-port=9222')
             chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
             
             # Define caminho do Chrome se estiver em Railway/Linux
+            chrome_binary = None
             if os.path.exists('/usr/bin/chromium'):
-                chrome_options.binary_location = '/usr/bin/chromium'
+                chrome_binary = '/usr/bin/chromium'
+                chrome_options.binary_location = chrome_binary
+                print(f"[DEBUG DBFusion] Usando Chrome em: {chrome_binary}")
             elif os.path.exists('/usr/bin/chromium-browser'):
-                chrome_options.binary_location = '/usr/bin/chromium-browser'
+                chrome_binary = '/usr/bin/chromium-browser'
+                chrome_options.binary_location = chrome_binary
+                print(f"[DEBUG DBFusion] Usando Chrome em: {chrome_binary}")
+            elif os.path.exists('/usr/bin/google-chrome'):
+                chrome_binary = '/usr/bin/google-chrome'
+                chrome_options.binary_location = chrome_binary
+                print(f"[DEBUG DBFusion] Usando Chrome em: {chrome_binary}")
+            else:
+                print("[DEBUG DBFusion] Chrome não encontrado nos caminhos padrão, tentando usar do PATH")
             
             # Tenta diferentes métodos para obter o ChromeDriver
             driver_path = None
             
-            # Método 1: Tenta usar webdriver-manager (pode falhar no Windows)
-            try:
-                # Limpa cache antigo que pode estar corrompido
-                import os
-                cache_dir = os.path.join(os.path.expanduser('~'), '.wdm')
-                if os.path.exists(cache_dir):
-                    try:
-                        import shutil
-                        # Não remove tudo, apenas tenta reinstalar
-                        pass
-                    except:
-                        pass
+            # Método 1: Em Linux/Railway, tenta usar ChromeDriver do sistema primeiro
+            if is_linux:
+                chromedriver_paths = [
+                    '/usr/bin/chromedriver',
+                    '/usr/local/bin/chromedriver',
+                    '/usr/lib/chromium-browser/chromedriver',
+                ]
                 
+                for chromedriver_path in chromedriver_paths:
+                    if os.path.exists(chromedriver_path):
+                        try:
+                            print(f"[DEBUG] Tentando usar ChromeDriver em: {chromedriver_path}")
+                            service = Service(chromedriver_path)
+                            self.driver = webdriver.Chrome(service=service, options=chrome_options)
+                            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+                            print("[DEBUG] ChromeDriver inicializado com sucesso!")
+                            return self.driver
+                        except Exception as e:
+                            print(f"[DEBUG] Erro ao usar {chromedriver_path}: {e}")
+                            continue
+            
+            # Método 2: Tenta usar webdriver-manager
+            try:
+                print("[DEBUG] Tentando usar webdriver-manager...")
                 driver_path = ChromeDriverManager().install()
+                print(f"[DEBUG] ChromeDriver baixado em: {driver_path}")
                 # Verifica se o arquivo existe e é válido
                 if os.path.exists(driver_path):
                     file_size = os.path.getsize(driver_path)
@@ -92,21 +114,24 @@ class DBFusionClient:
                         service = Service(driver_path)
                         self.driver = webdriver.Chrome(service=service, options=chrome_options)
                         self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+                        print("[DEBUG] ChromeDriver inicializado com sucesso via webdriver-manager!")
                         return self.driver
                     else:
-                        print(f"Aviso: ChromeDriver baixado parece corrompido (tamanho: {file_size} bytes)")
+                        print(f"[DEBUG] ChromeDriver baixado parece corrompido (tamanho: {file_size} bytes)")
             except Exception as e:
-                print(f"Aviso: Erro ao usar webdriver-manager: {e}")
+                print(f"[DEBUG] Erro ao usar webdriver-manager: {e}")
                 import traceback
                 traceback.print_exc()
             
-            # Método 2: Tenta usar ChromeDriver do PATH do sistema
+            # Método 3: Tenta usar ChromeDriver do PATH do sistema
             try:
+                print("[DEBUG] Tentando usar ChromeDriver do PATH...")
                 self.driver = webdriver.Chrome(options=chrome_options)
                 self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+                print("[DEBUG] ChromeDriver inicializado com sucesso do PATH!")
                 return self.driver
             except Exception as e:
-                print(f"Aviso: Erro ao usar ChromeDriver do PATH: {e}")
+                print(f"[DEBUG] Erro ao usar ChromeDriver do PATH: {e}")
             
             # Método 3: Tenta localizar ChromeDriver manualmente (Windows e Linux)
             import os

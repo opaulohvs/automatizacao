@@ -29,6 +29,12 @@ class SpyHubClient:
             chrome_options = Options()
             import os
             
+            # Detecta ambiente Railway/Linux
+            is_railway = bool(os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('RAILWAY_SERVICE_NAME'))
+            is_linux = os.path.exists('/usr/bin/chromium') or os.path.exists('/usr/bin/chromium-browser')
+            
+            print(f"[DEBUG SpyHub] Ambiente detectado - Railway: {is_railway}, Linux: {is_linux}")
+            
             # Sempre usar headless em servidores (Railway, Render, etc)
             chrome_options.add_argument('--headless')
             chrome_options.add_argument('--disable-gpu')
@@ -38,14 +44,42 @@ class SpyHubClient:
             chrome_options.add_argument('--disable-software-rasterizer')
             chrome_options.add_argument('--disable-extensions')
             chrome_options.add_argument('--single-process')  # Importante para Railway
+            chrome_options.add_argument('--disable-setuid-sandbox')
+            chrome_options.add_argument('--remote-debugging-port=9222')
             chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
             
             # Define caminho do Chrome se estiver em Railway/Linux
             if os.path.exists('/usr/bin/chromium'):
                 chrome_options.binary_location = '/usr/bin/chromium'
+                print(f"[DEBUG SpyHub] Usando Chrome em: /usr/bin/chromium")
             elif os.path.exists('/usr/bin/chromium-browser'):
                 chrome_options.binary_location = '/usr/bin/chromium-browser'
+                print(f"[DEBUG SpyHub] Usando Chrome em: /usr/bin/chromium-browser")
+            elif os.path.exists('/usr/bin/google-chrome'):
+                chrome_options.binary_location = '/usr/bin/google-chrome'
+                print(f"[DEBUG SpyHub] Usando Chrome em: /usr/bin/google-chrome")
+            
+            # Em Linux/Railway, tenta usar ChromeDriver do sistema primeiro
+            if is_linux:
+                chromedriver_paths = [
+                    '/usr/bin/chromedriver',
+                    '/usr/local/bin/chromedriver',
+                    '/usr/lib/chromium-browser/chromedriver',
+                ]
+                
+                for chromedriver_path in chromedriver_paths:
+                    if os.path.exists(chromedriver_path):
+                        try:
+                            print(f"[DEBUG SpyHub] Tentando usar ChromeDriver em: {chromedriver_path}")
+                            service = Service(chromedriver_path)
+                            self.driver = webdriver.Chrome(service=service, options=chrome_options)
+                            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+                            print("[DEBUG SpyHub] ChromeDriver inicializado com sucesso!")
+                            return self.driver
+                        except Exception as e:
+                            print(f"[DEBUG SpyHub] Erro ao usar {chromedriver_path}: {e}")
+                            continue
             
             # Tenta diferentes métodos para obter o ChromeDriver
             driver_path = None

@@ -5,10 +5,16 @@ RUN apt-get update && \
     apt-get install -y \
     chromium \
     chromium-driver \
+    chromium-sandbox \
     wget \
     curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Verificar instalação do Chrome
+RUN which chromium && chromium --version || echo "Chromium não encontrado"
+RUN which chromedriver && chromedriver --version || echo "ChromeDriver não encontrado"
+RUN ls -la /usr/bin/chrom* || echo "Nenhum executável chromium encontrado"
 
 # Definir variáveis de ambiente para Chrome
 ENV CHROME_BIN=/usr/bin/chromium
