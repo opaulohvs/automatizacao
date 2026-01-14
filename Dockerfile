@@ -24,9 +24,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código da aplicação
 COPY . .
 
+# Copiar e tornar executável o script de inicialização
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # Expor porta (Railway define PORT automaticamente)
 EXPOSE 8080
 
-# Comando para iniciar a aplicação
-CMD gunicorn app:app --bind 0.0.0.0:${PORT:-8080} --timeout 300 --workers 1
+# Comando para iniciar a aplicação usando o script
+CMD ["/app/start.sh"]
 

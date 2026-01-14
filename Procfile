@@ -1,2 +1,2 @@
-web: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300 --workers 1
+web: sh -c 'gunicorn app:app --bind 0.0.0.0:${PORT:-8080} --timeout 300 --workers 1'
 
